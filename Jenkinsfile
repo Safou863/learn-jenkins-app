@@ -52,8 +52,7 @@ stage('Deploy') {
             node_modules/.bin/netlify --version
             echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
             node_modules/.bin/netlify status
-            # Skip build because Jenkins already did it
-            node_modules/.bin/netlify deploy --dir=build --prod --skip-build
+            node_modules/.bin/netlify deploy --dir=build --prod
         '''
         }
     }
