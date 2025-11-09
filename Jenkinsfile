@@ -7,7 +7,6 @@ pipeline {
     }
 
     stages {
-
         stage('Build') {
             agent {
                 docker {
@@ -17,18 +16,19 @@ pipeline {
             }
             steps {
                 sh '''
+                    echo "=== BUILD STAGE ==="
                     ls -la
                     node --version
                     npm ci
                     npm run build
-                    ls -la
+                    ls -la build
                 '''
             }
         }
 
         stage('Tests') {
             parallel {
-                stage('Unit tests') {
+                stage('Unit Tests') {
                     agent {
                         docker {
                             image 'node:18-alpine'
@@ -37,7 +37,8 @@ pipeline {
                     }
                     steps {
                         sh '''
-                            npm test
+                            echo "=== UNIT TESTS ==="
+                            npm test -- --ci --reporters=jest-junit
                         '''
                     }
                     post {
@@ -47,7 +48,7 @@ pipeline {
                     }
                 }
 
-                stage('E2E') {
+                stage('E2E Tests') {
                     agent {
                         docker {
                             image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
@@ -56,6 +57,7 @@ pipeline {
                     }
                     steps {
                         sh '''
+                            echo "=== E2E TESTS ==="
                             npm install serve
                             npx serve -s build &
                             sleep 10
@@ -64,10 +66,10 @@ pipeline {
                     }
                     post {
                         always {
-                            publishHTML([
+                            publishHTML(target: [
                                 allowMissing: false,
-                                alwaysLinkToLastBuild: false,
-                                keepAll: false,
+                                alwaysLinkToLastBuild: true,
+                                keepAll: true,
                                 reportDir: 'playwright-report',
                                 reportFiles: 'index.html',
                                 reportName: 'Playwright Test Report'
@@ -87,13 +89,20 @@ pipeline {
             }
             steps {
                 sh '''
-                    npm install netlify-cli 
-                    node_modules/.bin/netlify --version
+                    echo "=== DEPLOY STAGE ==="
+                    npm install netlify-cli
+                    npx netlify --version
                     echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
-                    node_modules/.bin/netlify status
-                    node_modules/.bin/netlify deploy --dir=build --prod 
+                    npx netlify status
+                    npx netlify deploy --prod --dir=build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN
                 '''
             }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline terminé — Build, Tests, et Déploiement effectués."
         }
     }
 }
