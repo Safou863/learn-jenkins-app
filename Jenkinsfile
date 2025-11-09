@@ -20,9 +20,10 @@ pipeline {
                     npm --version
                     npm ci
                     npm run build
-                    npm install -g netlify-cli
+                    npm install netlify-cli
                     echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
-                    netlify deploy --dir=build --prod --auth $NETLIFY_AUTH_TOKEN --site $NETLIFY_SITE_ID
+                    npx netlify deploy --dir=build --prod --auth $NETLIFY_AUTH_TOKEN --site $NETLIFY_SITE_ID
+                    
                 '''
             }
         }
